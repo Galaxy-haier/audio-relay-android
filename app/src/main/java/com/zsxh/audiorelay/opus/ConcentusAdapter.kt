@@ -1,9 +1,9 @@
 package com.zsxh.audiorelay.opus
 
 import android.util.Log
-import org.concentus.OpusApplication
-import org.concentus.OpusEncoder as ConcentusEncoder
-import org.concentus.OpusSignal
+import io.github.jaredmdobson.OpusApplication
+import io.github.jaredmdobson.OpusEncoder as ConcentusEncoder
+import io.github.jaredmdobson.OpusSignal
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -27,7 +27,7 @@ class ConcentusAdapter(
     init {
         encoder = ConcentusEncoder(sampleRate, channels, OpusApplication.OPUS_APPLICATION_AUDIO)
         encoder.setBitrate(bitrate)
-        encoder.setSignal(OpusSignal.OPUS_SIGNAL_MUSIC)
+        encoder.setSignalType(OpusSignal.OPUS_SIGNAL_MUSIC)
         Log.i(TAG, "Concentus Opus encoder created")
     }
 

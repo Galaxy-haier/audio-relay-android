@@ -47,5 +47,5 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Opus encoder (pure Java port of libopus)
-    implementation("org.concentus:Concentus:1.0.6")
+    implementation("io.github.jaredmdobson:concentus:1.0.1")
 }
