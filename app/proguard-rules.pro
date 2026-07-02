@@ -1,0 +1,2 @@
+-keep class org.concentus.** { *; }
+-dontwarn org.concentus.**
