@@ -31,8 +31,10 @@ class MainActivity : AppCompatActivity() {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             service = (binder as AudioCaptureService.LocalBinder).service
             isBound = true
-            service?.onStateChanged = { state -> runOnUiThread { updateUI(state) } }
-            updateUI(service?.currentState ?: AudioCaptureService.State.IDLE)
+            service?.onStateChanged = { state, errorMsg -> 
+                runOnUiThread { updateUI(state, errorMsg) } 
+            }
+            updateUI(service?.currentState ?: AudioCaptureService.State.IDLE, "")
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -157,7 +159,7 @@ class MainActivity : AppCompatActivity() {
         startService(intent)
     }
 
-    private fun updateUI(state: AudioCaptureService.State) {
+    private fun updateUI(state: AudioCaptureService.State, errorMsg: String = "") {
         when (state) {
             AudioCaptureService.State.IDLE -> {
                 binding.tvStatus.text = "未连接"
@@ -185,7 +187,8 @@ class MainActivity : AppCompatActivity() {
                 setInputsEnabled(false)
             }
             AudioCaptureService.State.ERROR -> {
-                binding.tvStatus.text = "错误"
+                val displayText = if (errorMsg.isNotEmpty()) "错误: $errorMsg" else "错误"
+                binding.tvStatus.text = displayText
                 binding.tvStatus.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
                 binding.btnStart.text = "重试"
                 binding.btnStart.isEnabled = true

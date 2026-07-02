@@ -55,12 +55,13 @@ class AudioCaptureService : Service() {
     private var sequenceNumber: Int = 0
 
     // 状态回调
-    var onStateChanged: ((State) -> Unit)? = null
+    var onStateChanged: ((State, String) -> Unit)? = null
     var onStatsUpdate: ((Long, Long) -> Unit)? = null  // framesSent, bytesSent
 
     enum class State { IDLE, CONNECTING, CONNECTED, STREAMING, ERROR }
 
     @Volatile var currentState = State.IDLE; private set
+    @Volatile var lastError: String = ""
 
     override fun onBind(intent: Intent?): IBinder = binder
 
@@ -114,7 +115,7 @@ class AudioCaptureService : Service() {
             }
             onError = { msg ->
                 Log.e(TAG, "WS error: $msg")
-                updateState(State.ERROR)
+                updateState(State.ERROR, msg)
             }
             onDisconnected = { code, reason ->
                 Log.i(TAG, "WS disconnected: $code $reason")
@@ -129,7 +130,7 @@ class AudioCaptureService : Service() {
     private fun startAudioThread(resultCode: Int, resultData: Intent?) {
         if (resultData == null) {
             Log.e(TAG, "No MediaProjection data")
-            updateState(State.ERROR)
+            updateState(State.ERROR, "No MediaProjection data")
             return
         }
 
@@ -143,7 +144,7 @@ class AudioCaptureService : Service() {
         audioCapture = AudioCapture(mediaProjection, SAMPLE_RATE, CHANNELS)
         val record = audioCapture?.start() ?: run {
             Log.e(TAG, "Failed to start audio capture")
-            updateState(State.ERROR)
+            updateState(State.ERROR, "Failed to start audio capture")
             return
         }
 
@@ -193,9 +194,10 @@ class AudioCaptureService : Service() {
         updateState(State.IDLE)
     }
 
-    private fun updateState(state: State) {
+    private fun updateState(state: State, errorMsg: String = "") {
         currentState = state
-        onStateChanged?.invoke(state)
+        if (errorMsg.isNotEmpty()) lastError = errorMsg
+        onStateChanged?.invoke(state, errorMsg)
     }
 
     private fun createNotificationChannel() {
