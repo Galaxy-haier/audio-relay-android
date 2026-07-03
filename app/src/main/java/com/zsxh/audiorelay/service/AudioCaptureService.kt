@@ -154,12 +154,34 @@ class AudioCaptureService : Service() {
             val pcmBuffer = ByteArray(PCM_FRAME_BYTES)
             var framesSent = 0L
             var bytesSent = 0L
+            var lastLogTime = System.currentTimeMillis()
+            var framesSinceLog = 0
+            var maxPcmSample = 0.0
 
             while (isRunning.get()) {
                 val bytesRead = record.read(pcmBuffer, 0, pcmBuffer.size)
                 if (bytesRead <= 0) {
                     Thread.sleep(10)
                     continue
+                }
+
+                // 每100帧打印一次 PCM 音量（诊断用）
+                framesSinceLog++
+                if (framesSinceLog >= 100) {
+                    // 计算 RMS
+                    var sumSq = 0.0
+                    val shorts = bytesRead / 2
+                    val buf = java.nio.ByteBuffer.wrap(pcmBuffer).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                    for (i in 0 until shorts) {
+                        val s = buf.short.toDouble()
+                        sumSq += s * s
+                        if (kotlin.math.abs(s) > maxPcmSample) maxPcmSample = kotlin.math.abs(s)
+                    }
+                    val rms = kotlin.math.sqrt(sumSq / shorts)
+                    val dB = if (rms > 0) (20 * kotlin.math.log10(rms / 32768.0)).toInt() else -96
+                    Log.i(TAG, "PCM level: rms=${rms.toInt()} max=$maxPcmSample dB=$dB frames=$framesSinceLog encodedSize=${opusEncoder?.encode(pcmBuffer.copyOf(bytesRead))?.size ?: 0}")
+                    framesSinceLog = 0
+                    maxPcmSample = 0.0
                 }
 
                 // 编码
